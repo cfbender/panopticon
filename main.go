@@ -22,11 +22,13 @@ func main() {
 	var (
 		runOnStart bool
 		showHelp   bool
+		verbose    bool
 		opts       []tea.ProgramOption
 	)
 
 	flag.BoolVar(&runOnStart, "run-on-start", false, "whether to run all commands on start")
 	flag.BoolVar(&showHelp, "h", false, "show help")
+	flag.BoolVar(&verbose, "verbose", false, "print a bunch of janky logs")
 	flag.Parse()
 
 	if showHelp {
@@ -36,7 +38,10 @@ func main() {
 
 	model := panopticon.NewModel()
 
-	log.SetOutput(io.Discard)
+	if !verbose {
+		log.SetOutput(io.Discard)
+	}
+
 	p := tea.NewProgram(model, opts...)
 
 	if runOnStart {

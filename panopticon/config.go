@@ -2,6 +2,7 @@ package panopticon
 
 import (
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -53,5 +54,40 @@ func loadConfig(path string) (Config, error) {
 	}
 
 	err = yaml.Unmarshal(data, &conf)
-	return conf, err
+	var commands []Command
+	for i, cmd := range conf.Commands {
+		// Get absolute path for each watch path
+		var paths []string
+		for _, watchPath := range cmd.WatchPaths {
+			absPath, _ := getAbsolutePath(watchPath)
+			paths = append(paths, absPath)
+		}
+
+		commands = append(commands, Command{
+			ID:         i,
+			Cmd:        cmd.Cmd,
+			WatchPaths: paths,
+		})
+	}
+
+	return Config{commands}, err
+}
+
+func getAbsolutePath(relativePath string) (string, error) {
+	// If path is already absolute, return it
+	if filepath.IsAbs(relativePath) {
+		return relativePath, nil
+	}
+
+	// Get current working directory
+	pwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	// Join the pwd with the relative path and convert to absolute
+	absPath := filepath.Join(pwd, relativePath)
+
+	// Clean the path to remove any ".." or "." segments
+	return filepath.Clean(absPath), nil
 }
