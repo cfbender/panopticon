@@ -8,6 +8,13 @@ A TUI command runner with a built-in file-watcher.
 - View output from commands after running with scrollable viewport
 
 ## Installation
+### Via `go install` (recommended)
+With go 1.23 or higher:
+```
+go install github.com/cfbender/panopticon@latest
+```
+
+### From source
 Clone the repo and run `go install`.
 
 If you don't have a config file, you can run `pan init` to generate one at your current working directory.
