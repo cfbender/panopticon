@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"gopkg.in/yaml.v3"
 )
@@ -33,6 +34,7 @@ type model struct {
 	results  map[int]result
 	quitting bool
 	commands []Command
+	progress progress.Model
 }
 
 type Command struct {
