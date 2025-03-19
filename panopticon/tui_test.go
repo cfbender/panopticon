@@ -1,8 +1,9 @@
 package panopticon
 
 import (
-	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestGetEmoji(t *testing.T) {
@@ -16,9 +17,7 @@ func TestGetEmoji(t *testing.T) {
 	for status, expected := range expectedMap {
 		emoji := getEmoji(status)
 
-		if emoji != expected {
-			t.Errorf("Expected %s, got %s", expected, emoji)
-		}
+		require.Equal(t, expected, emoji)
 	}
 }
 
@@ -37,8 +36,6 @@ func TestGetStatus(t *testing.T) {
 		}
 		got := getStatus(res)
 
-		if !strings.Contains(got, expected) {
-			t.Errorf("Expected %s, got %s", expected, got)
-		}
+		require.Contains(t, got, expected)
 	}
 }
