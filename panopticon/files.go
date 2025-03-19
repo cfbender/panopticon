@@ -88,7 +88,6 @@ func getPaths(command Command) []string {
 		subdirs, _ := listSubdirectories(path)
 		paths = append(paths, subdirs...)
 	}
-	log.Printf("%s: All paths: %s\n", command.Cmd, paths)
 
 	// remove ignored
 	var filteredPaths []string
