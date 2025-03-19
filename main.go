@@ -36,6 +36,14 @@ func main() {
 		flag.Usage()
 		os.Exit(0)
 	}
+	argsWithoutProg := os.Args[1:]
+
+	if len(argsWithoutProg) > 0 {
+		if argsWithoutProg[0] == "init" {
+			panopticon.InitConfig()
+			os.Exit(0)
+		}
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

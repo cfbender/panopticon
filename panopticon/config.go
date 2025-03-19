@@ -2,6 +2,7 @@ package panopticon
 
 import (
 	"context"
+	"log"
 	"os"
 	"path/filepath"
 	"time"
@@ -19,6 +20,7 @@ const (
 	Pending Status = iota
 	Succeeded
 	Failed
+	configFile = "./panopticon.yaml"
 )
 
 func (s Status) String() string {
@@ -54,10 +56,16 @@ type Config struct {
 	Commands []Command `yaml:"commands"`
 }
 
-func loadConfig(path string) (Config, error) {
+func loadConfig() (Config, error) {
+	// Check if the config file exists
+	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+		log.Println("Config file not found, please run pan init or create one.")
+		return Config{}, err
+	}
+
 	var conf Config
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(configFile)
 	if err != nil {
 		return conf, err
 	}
@@ -99,4 +107,22 @@ func getAbsolutePath(relativePath string) (string, error) {
 
 	// Clean the path to remove any ".." or "." segments
 	return filepath.Clean(absPath), nil
+}
+
+func InitConfig() error {
+	// don't if file exists
+	if _, err := os.Stat("panopticon.yaml"); err == nil {
+		log.Println("panopticon.yaml already exists")
+		return nil
+	}
+
+	content := []byte(`# yaml-language-server: $schema=panopticon.schema.json
+commands:
+  - cmd: "echo 'Hello, World!'"
+    watch_paths:
+      - ./
+`)
+
+	log.Println("Creating sample panopticon.yaml")
+	return os.WriteFile("panopticon.yaml", content, 0o644)
 }

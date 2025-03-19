@@ -36,7 +36,7 @@ const (
 )
 
 func NewModel(cancel context.CancelFunc) model {
-	config, err := loadConfig("./panopticon.yaml")
+	config, err := loadConfig()
 	if err != nil {
 		fmt.Println("Error loading config:", err)
 		os.Exit(1)
