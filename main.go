@@ -45,6 +45,7 @@ func main() {
 		log.SetOutput(io.Discard)
 	}
 
+	opts = append(opts, tea.WithAltScreen())
 	p := tea.NewProgram(model, opts...)
 
 	if runOnStart {
