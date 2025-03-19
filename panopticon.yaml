@@ -5,4 +5,7 @@ commands:
       - ./panopticon
   - cmd: go test ./...
     watch_paths:
-      - ./panopticon
+      - ./
+    ignore_paths:
+      - .git
+      - .github

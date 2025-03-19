@@ -4,7 +4,6 @@ import (
 	"context"
 	"log"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/charmbracelet/bubbles/list"
@@ -47,9 +46,10 @@ type model struct {
 }
 
 type Command struct {
-	ID         int
-	Cmd        string   `yaml:"cmd"`
-	WatchPaths []string `yaml:"watch_paths"`
+	ID          int
+	Cmd         string   `yaml:"cmd" validate:"required"`
+	WatchPaths  []string `yaml:"watch_paths" validate:"required"`
+	IgnorePaths []string `yaml:"ignore_paths,omitempty"`
 }
 
 type Config struct {
@@ -88,25 +88,6 @@ func loadConfig() (Config, error) {
 	}
 
 	return Config{commands}, err
-}
-
-func getAbsolutePath(relativePath string) (string, error) {
-	// If path is already absolute, return it
-	if filepath.IsAbs(relativePath) {
-		return relativePath, nil
-	}
-
-	// Get current working directory
-	pwd, err := os.Getwd()
-	if err != nil {
-		return "", err
-	}
-
-	// Join the pwd with the relative path and convert to absolute
-	absPath := filepath.Join(pwd, relativePath)
-
-	// Clean the path to remove any ".." or "." segments
-	return filepath.Clean(absPath), nil
 }
 
 func InitConfig() error {

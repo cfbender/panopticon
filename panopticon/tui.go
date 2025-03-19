@@ -44,7 +44,7 @@ func NewModel(cancel context.CancelFunc) model {
 
 	var commands []Command
 	for i, cmd := range config.Commands {
-		commands = append(commands, Command{i, cmd.Cmd, cmd.WatchPaths})
+		commands = append(commands, Command{i, cmd.Cmd, cmd.WatchPaths, cmd.IgnorePaths})
 	}
 
 	sp := spinner.New()

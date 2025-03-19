@@ -25,12 +25,7 @@ func watchForChange(command Command, p *tea.Program, ctx context.Context) *fsnot
 		log.Fatal(err)
 	}
 
-	var paths []string
-	paths = append(paths, command.WatchPaths...)
-	for _, path := range paths {
-		subdirs, _ := listSubdirectories(path)
-		paths = append(paths, subdirs...)
-	}
+	paths := getPaths(command)
 
 	// Add all paths to single watcher
 	for _, subdir := range paths {
@@ -75,6 +70,29 @@ func watchForChange(command Command, p *tea.Program, ctx context.Context) *fsnot
 	return watcher
 }
 
+func getPaths(command Command) []string {
+	var paths []string
+	paths = append(paths, command.WatchPaths...)
+
+	ignored := make(map[string]bool, len(command.IgnorePaths))
+	for _, path := range command.IgnorePaths {
+
+		absolutePath, err := getAbsolutePath(path)
+		if err != nil {
+			ignored[absolutePath] = true
+		}
+	}
+
+	for _, path := range paths {
+		absolutePath, err := getAbsolutePath(path)
+		if err != nil && !ignored[absolutePath] {
+			subdirs, _ := listSubdirectories(path)
+			paths = append(paths, subdirs...)
+		}
+	}
+	return paths
+}
+
 func listSubdirectories(root string) ([]string, error) {
 	var dirs []string
 
@@ -89,6 +107,25 @@ func listSubdirectories(root string) ([]string, error) {
 	})
 
 	return dirs, err
+}
+
+func getAbsolutePath(relativePath string) (string, error) {
+	// If path is already absolute, return it
+	if filepath.IsAbs(relativePath) {
+		return relativePath, nil
+	}
+
+	// Get current working directory
+	pwd, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
+
+	// Join the pwd with the relative path and convert to absolute
+	absPath := filepath.Join(pwd, relativePath)
+
+	// Clean the path to remove any ".." or "." segments
+	return filepath.Clean(absPath), nil
 }
 
 func (m model) closeWatchers() tea.Msg {
