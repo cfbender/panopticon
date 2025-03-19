@@ -2,7 +2,10 @@
 commands:
   - cmd: go build
     watch_paths:
-      - ./panopticon
+      - ./
+    ignore_paths:
+      - .git
+      - .github
   - cmd: go test ./...
     watch_paths:
       - ./
