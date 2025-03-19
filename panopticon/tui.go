@@ -109,10 +109,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					running:         i.running,
 				})
 			} else {
-				content := m.results[i.id].output
-				height := min(countLines(content), 20)
-				vp := viewport.New(80, height)
-				vp.SetContent(content)
+				height := min(countLines(i.body), 20)
+				vp := viewport.New(60, height)
+				vp.SetContent(i.body)
 
 				m.currentViewport = &vp
 				m.currentSelected = i.id
