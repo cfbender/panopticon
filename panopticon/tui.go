@@ -14,8 +14,8 @@ import (
 )
 
 var (
-	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render
-	mainStyle = lipgloss.NewStyle().MarginLeft(1)
+	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#f4b8e4")).Render
+	mainStyle = lipgloss.NewStyle().MarginLeft(1).PaddingLeft(1).PaddingRight(1).BorderStyle(lipgloss.NormalBorder())
 )
 
 const (
@@ -36,7 +36,7 @@ func NewModel() model {
 	}
 
 	sp := spinner.New()
-	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("206"))
+	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#ca9ee6"))
 	// Create a slice with one entry per command
 	results := make(map[int]result, len(commands))
 

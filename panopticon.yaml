@@ -1,0 +1,4 @@
+commands:
+  - cmd: go build
+    watch_paths:
+      - ./panopticon
