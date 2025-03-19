@@ -39,3 +39,11 @@ func TestGetStatus(t *testing.T) {
 		require.Contains(t, got, expected)
 	}
 }
+
+func TestView(t *testing.T) {
+	// Test that the view function returns a string
+	m := model{}
+	view := m.View()
+
+	require.NotEmpty(t, view)
+}

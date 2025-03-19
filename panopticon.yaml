@@ -3,3 +3,6 @@ commands:
   - cmd: go build
     watch_paths:
       - ./panopticon
+  - cmd: go test ./...
+    watch_paths:
+      - ./panopticon
