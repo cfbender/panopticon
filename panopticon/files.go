@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -30,6 +31,7 @@ func watchForChange(command Command, p *tea.Program, ctx context.Context) *fsnot
 	// Add all paths to single watcher
 	for _, subdir := range paths {
 		err = watcher.Add(subdir)
+		log.Println("Watching:", subdir)
 		if err != nil {
 			log.Println("Error watching:", subdir, err)
 		}
@@ -51,7 +53,7 @@ func watchForChange(command Command, p *tea.Program, ctx context.Context) *fsnot
 				if !ok {
 					return
 				}
-				if event.Has(fsnotify.Write) {
+				if event.Has(fsnotify.Write) && !strings.Contains(event.Name, "pan.log") {
 					// Cancel previous command and start new one
 					cancelCmd()
 					cmdCtx, cancelCmd = context.WithCancel(ctx)
@@ -74,23 +76,37 @@ func getPaths(command Command) []string {
 	var paths []string
 	paths = append(paths, command.WatchPaths...)
 
+	log.Printf("%s: Watching paths: %s\n", command.Cmd, command.WatchPaths)
+	log.Printf("%s: Ignoring paths: %s\n", command.Cmd, command.IgnorePaths)
 	ignored := make(map[string]bool, len(command.IgnorePaths))
-	for _, path := range command.IgnorePaths {
 
-		absolutePath, err := getAbsolutePath(path)
-		if err != nil {
-			ignored[absolutePath] = true
-		}
+	for _, path := range command.IgnorePaths {
+		ignored[path] = true
 	}
 
 	for _, path := range paths {
-		absolutePath, err := getAbsolutePath(path)
-		if err != nil && !ignored[absolutePath] {
-			subdirs, _ := listSubdirectories(path)
-			paths = append(paths, subdirs...)
+		subdirs, _ := listSubdirectories(path)
+		paths = append(paths, subdirs...)
+	}
+	log.Printf("%s: All paths: %s\n", command.Cmd, paths)
+
+	// remove ignored
+	var filteredPaths []string
+	for _, path := range paths {
+		shouldIgnore := false
+		for _, ignore := range command.IgnorePaths {
+			isChild, _ := isSubDir(ignore, path)
+			// only set shouldIgnore if still false
+			if !shouldIgnore && (isChild || ignored[path]) {
+				shouldIgnore = true
+			}
+		}
+		if !shouldIgnore {
+			filteredPaths = append(filteredPaths, path)
 		}
 	}
-	return paths
+
+	return filteredPaths
 }
 
 func listSubdirectories(root string) ([]string, error) {
@@ -134,4 +150,18 @@ func (m model) closeWatchers() tea.Msg {
 	time.Sleep(100 * time.Millisecond)
 
 	return nil
+}
+
+func isSubDir(parent, sub string) (bool, error) {
+	up := ".." + string(os.PathSeparator)
+
+	// path-comparisons using filepath.Abs don't work reliably according to docs (no unique representation).
+	rel, err := filepath.Rel(parent, sub)
+	if err != nil {
+		return false, err
+	}
+	if !strings.HasPrefix(rel, up) && rel != ".." {
+		return true, nil
+	}
+	return false, nil
 }

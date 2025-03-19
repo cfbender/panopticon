@@ -29,7 +29,7 @@ func main() {
 
 	flag.BoolVar(&runOnStart, "run-on-start", false, "whether to run all commands on start")
 	flag.BoolVar(&showHelp, "h", false, "show help")
-	flag.BoolVar(&verbose, "verbose", false, "print a bunch of janky logs")
+	flag.BoolVar(&verbose, "verbose", false, "log output to pan.log")
 	flag.Parse()
 
 	if showHelp {
@@ -51,6 +51,16 @@ func main() {
 
 	if !verbose {
 		log.SetOutput(io.Discard)
+	} else {
+		f, err := os.OpenFile("pan.log",
+			os.O_RDWR|os.O_CREATE|os.O_APPEND,
+			0o666)
+		if err != nil {
+			log.Fatalf("error opening file: %v", err)
+		}
+		defer f.Close()
+
+		log.SetOutput(f)
 	}
 
 	opts = append(opts, tea.WithAltScreen())

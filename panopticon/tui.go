@@ -182,7 +182,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 		percent := float64(completed) / float64(len(m.commands))
-		log.Printf("Progress: %d/%d (%.2f%%)\n", completed, len(m.commands), percent*100)
 
 		command = m.progress.SetPercent(percent)
 	}

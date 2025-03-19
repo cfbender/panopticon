@@ -74,16 +74,24 @@ func loadConfig() (Config, error) {
 	var commands []Command
 	for i, cmd := range conf.Commands {
 		// Get absolute path for each watch path
-		var paths []string
+		var watchPaths []string
 		for _, watchPath := range cmd.WatchPaths {
 			absPath, _ := getAbsolutePath(watchPath)
-			paths = append(paths, absPath)
+			watchPaths = append(watchPaths, absPath)
+		}
+
+		// Get absolute path for each ignore path
+		var ignorePaths []string
+		for _, ignorePath := range cmd.IgnorePaths {
+			absPath, _ := getAbsolutePath(ignorePath)
+			ignorePaths = append(ignorePaths, absPath)
 		}
 
 		commands = append(commands, Command{
-			ID:         i,
-			Cmd:        cmd.Cmd,
-			WatchPaths: paths,
+			ID:          i,
+			Cmd:         cmd.Cmd,
+			WatchPaths:  watchPaths,
+			IgnorePaths: ignorePaths,
 		})
 	}
 
