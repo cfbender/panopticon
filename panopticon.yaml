@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=panopticon.schema.json
 commands:
   - cmd: go build
     watch_paths:
