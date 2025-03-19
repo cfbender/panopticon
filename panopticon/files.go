@@ -1,21 +1,30 @@
 package panopticon
 
 import (
+	"context"
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/fsnotify/fsnotify"
 )
 
-func WatchForChanges(m model, p *tea.Program) {
+func WatchForChanges(m model, p *tea.Program, ctx context.Context) []*fsnotify.Watcher {
+	var watchers []*fsnotify.Watcher
 	for _, cmd := range m.commands {
-		watchForChange(cmd, p)
+		watchers = append(watchers, watchForChange(cmd, p, ctx))
 	}
+	return watchers
 }
 
-func watchForChange(command Command, p *tea.Program) {
+func watchForChange(command Command, p *tea.Program, ctx context.Context) *fsnotify.Watcher {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	var paths []string
 	paths = append(paths, command.WatchPaths...)
 	for _, path := range paths {
@@ -23,46 +32,47 @@ func watchForChange(command Command, p *tea.Program) {
 		paths = append(paths, subdirs...)
 	}
 
-	log.Println("Watching directories:", paths)
-
+	// Add all paths to single watcher
 	for _, subdir := range paths {
-		go func() {
-			log.Println("Adding directory to watch:", subdir)
-
-			watcher, err := fsnotify.NewWatcher()
-			if err != nil {
-				log.Fatal(err)
-			}
-			defer watcher.Close()
-
-			err = watcher.Add(subdir)
-			if err != nil {
-				log.Fatal(err)
-			}
-
-			// Wait for a single event then return a message
-			for {
-				select {
-				case event, ok := <-watcher.Events:
-					if !ok {
-						log.Println("Watcher received bad event")
-						os.Exit(1)
-					}
-					log.Println("event:", event)
-					if event.Has(fsnotify.Write) {
-						log.Println("modified file:", event.Name)
-						runProcess(command, p)
-					}
-				case watcherErr, ok := <-watcher.Errors:
-					if !ok {
-						log.Println("Unable to set up file watcher")
-						os.Exit(1)
-					}
-					log.Println("error:", watcherErr)
-				}
-			}
-		}()
+		err = watcher.Add(subdir)
+		if err != nil {
+			log.Println("Error watching:", subdir, err)
+		}
 	}
+
+	// Use a cancellable context for command execution
+	cmdCtx, cancelCmd := context.WithCancel(ctx)
+
+	// Only one goroutine per watcher
+	go func() {
+		defer watcher.Close()
+
+		for {
+			select {
+			case <-ctx.Done():
+				cancelCmd() // Cancel any running command
+				return
+			case event, ok := <-watcher.Events:
+				if !ok {
+					return
+				}
+				if event.Has(fsnotify.Write) {
+					// Cancel previous command and start new one
+					cancelCmd()
+					cmdCtx, cancelCmd = context.WithCancel(ctx)
+
+					go runProcess(command, p, cmdCtx)
+				}
+			case err, ok := <-watcher.Errors:
+				if !ok {
+					return
+				}
+				log.Println("watcher error:", err)
+			}
+		}
+	}()
+
+	return watcher
 }
 
 func listSubdirectories(root string) ([]string, error) {
@@ -79,4 +89,12 @@ func listSubdirectories(root string) ([]string, error) {
 	})
 
 	return dirs, err
+}
+
+func (m model) closeWatchers() tea.Msg {
+	m.cancelAll()
+	// sleep 100 ms to allow interrupts
+	time.Sleep(100 * time.Millisecond)
+
+	return nil
 }

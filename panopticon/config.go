@@ -1,12 +1,15 @@
 package panopticon
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"time"
 
+	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
+	"github.com/charmbracelet/bubbles/viewport"
 	"gopkg.in/yaml.v3"
 )
 
@@ -30,11 +33,15 @@ type result struct {
 }
 
 type model struct {
-	spinner  spinner.Model
-	results  map[int]result
-	quitting bool
-	commands []Command
-	progress progress.Model
+	spinner         spinner.Model
+	results         map[int]result
+	quitting        bool
+	commands        []Command
+	progress        progress.Model
+	list            list.Model
+	currentViewport *viewport.Model
+	currentSelected int
+	cancelAll       context.CancelFunc
 }
 
 type Command struct {

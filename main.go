@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -36,7 +37,9 @@ func main() {
 		os.Exit(0)
 	}
 
-	model := panopticon.NewModel()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	model := panopticon.NewModel(cancel)
 
 	if !verbose {
 		log.SetOutput(io.Discard)
@@ -45,10 +48,10 @@ func main() {
 	p := tea.NewProgram(model, opts...)
 
 	if runOnStart {
-		go panopticon.RunAll(model, p)
+		go panopticon.RunAll(model, p, ctx)
 	}
 
-	go panopticon.WatchForChanges(model, p)
+	go panopticon.WatchForChanges(model, p, ctx)
 
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error starting Bubble Tea program:", err)
