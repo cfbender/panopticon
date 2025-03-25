@@ -54,3 +54,8 @@ Outputs the various flags that can be passed
 pan --run-on-start
 ```
 Will run all commands currently upon watcher start, and then again on subsequent changes.
+
+```
+pan --match "*echo*"
+```
+Will run all commands matching the glob pattern `*echo*`
