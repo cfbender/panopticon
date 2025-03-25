@@ -30,9 +30,12 @@ func main() {
 	)
 
 	flag.BoolVar(&runOnStart, "run-on-start", false, "whether to run all commands on start")
+	flag.BoolVar(&runOnStart, "r", false, "whether to run all commands on start")
 	flag.BoolVar(&showHelp, "h", false, "show help")
+	flag.BoolVar(&showHelp, "help", false, "show help")
 	flag.BoolVar(&verbose, "verbose", false, "log output to pan.log")
 	flag.StringVar(&match, "match", "*", "glob pattern to match commands")
+	flag.StringVar(&match, "m", "*", "glob pattern to match commands")
 	flag.Parse()
 
 	if showHelp {

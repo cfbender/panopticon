@@ -46,16 +46,20 @@ pan
 Changing the file `index.ts` would run only `echo "source"`, where changing `src/components/some-component.tsx` would run both `echo "source"` and `echo "components"`.
 
 ### Options
+
+- `--help` or `-h`
 ```sh
 pan -h
 ```
 Outputs the various flags that can be passed
+- `--run-on-start` or `-r`
 ```sh
 pan --run-on-start
 ```
 Will run all commands currently upon watcher start, and then again on subsequent changes.
 
-```
+- `--match` or `-m`
+```sh
 pan --match "*echo*"
 ```
 Will run all commands matching the glob pattern `*echo*`
