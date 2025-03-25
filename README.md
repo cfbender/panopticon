@@ -47,7 +47,7 @@ Changing the file `index.ts` would run only `echo "source"`, where changing `src
 
 ### Options
 ```sh
-pan --help
+pan -h
 ```
 Outputs the various flags that can be passed
 ```sh
