@@ -12,6 +12,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gobwas/glob"
 )
 
 var (
@@ -24,12 +25,14 @@ func main() {
 		runOnStart bool
 		showHelp   bool
 		verbose    bool
+		match      string
 		opts       []tea.ProgramOption
 	)
 
 	flag.BoolVar(&runOnStart, "run-on-start", false, "whether to run all commands on start")
 	flag.BoolVar(&showHelp, "h", false, "show help")
 	flag.BoolVar(&verbose, "verbose", false, "log output to pan.log")
+	flag.StringVar(&match, "match", "*", "glob pattern to match commands")
 	flag.Parse()
 
 	if showHelp {
@@ -47,7 +50,9 @@ func main() {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	model := panopticon.NewModel(cancel)
+
+	g := glob.MustCompile(match)
+	model := panopticon.NewModel(cancel, g)
 
 	if !verbose {
 		log.SetOutput(io.Discard)

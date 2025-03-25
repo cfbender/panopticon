@@ -15,6 +15,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/gobwas/glob"
 	"golang.org/x/term"
 )
 
@@ -35,7 +36,7 @@ const (
 	offset  = 20
 )
 
-func NewModel(cancel context.CancelFunc) model {
+func NewModel(cancel context.CancelFunc, g glob.Glob) model {
 	config, err := loadConfig()
 	if err != nil {
 		fmt.Println("Error loading config:", err)
@@ -43,8 +44,12 @@ func NewModel(cancel context.CancelFunc) model {
 	}
 
 	var commands []Command
-	for i, cmd := range config.Commands {
-		commands = append(commands, Command{i, cmd.Cmd, cmd.WatchPaths, cmd.IgnorePaths})
+	var i int
+	for _, cmd := range config.Commands {
+		if g.Match(cmd.Cmd) {
+			commands = append(commands, Command{i, cmd.Cmd, cmd.WatchPaths, cmd.IgnorePaths})
+			i++
+		}
 	}
 
 	sp := spinner.New()
