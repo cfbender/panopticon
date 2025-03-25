@@ -1,4 +1,6 @@
-module pan
+module github.com/cfbender/panopticon
+
+// go:binary pan
 
 go 1.24
 
