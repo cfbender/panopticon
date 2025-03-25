@@ -9,7 +9,7 @@ import (
 	"os"
 	"runtime/debug"
 
-	"pan/panopticon"
+	panopticon "github.com/cfbender/panopticon/internal"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -33,12 +33,17 @@ func main() {
 
 	flag.BoolVar(&runOnStart, "run-on-start", false, "whether to run all commands on start")
 	flag.BoolVar(&runOnStart, "r", false, "whether to run all commands on start")
+
 	flag.BoolVar(&showHelp, "h", false, "show help")
 	flag.BoolVar(&showHelp, "help", false, "show help")
+
 	flag.BoolVar(&verbose, "verbose", false, "log output to pan.log")
+
 	flag.BoolVar(&showVersion, "v", false, "show version")
+
 	flag.StringVar(&match, "match", "*", "glob pattern to match commands")
 	flag.StringVar(&match, "m", "*", "glob pattern to match commands")
+
 	flag.Parse()
 
 	if showHelp {
@@ -51,6 +56,7 @@ func main() {
 		fmt.Println(info.Main.Version)
 		os.Exit(0)
 	}
+
 	argsWithoutProg := os.Args[1:]
 
 	if len(argsWithoutProg) > 0 {

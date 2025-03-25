@@ -1,4 +1,4 @@
-package panopticon
+package internal
 
 import (
 	"bytes"

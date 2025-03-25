@@ -17,7 +17,7 @@ go install github.com/cfbender/panopticon@latest
 ### From source
 Clone the repo and run `go install`.
 
-If you don't have a config file, you can run `pan init` to generate one at your current working directory.
+If you don't have a config file, you can run `panopticon init` to generate one at your current working directory.
 
 ## Usage
 Given the following config:
@@ -41,7 +41,7 @@ package.json
 
 - Start the watcher with no commands running
 ```sh
-pan
+panopticon
 ```
 Changing the file `index.ts` would run only `echo "source"`, where changing `src/components/some-component.tsx` would run both `echo "source"` and `echo "components"`.
 
@@ -49,23 +49,23 @@ Changing the file `index.ts` would run only `echo "source"`, where changing `src
 
 - `--help` or `-h`
 ```sh
-pan -h
+panopticon -h
 ```
 Outputs the various flags that can be passed
 - `--run-on-start` or `-r`
 ```sh
-pan --run-on-start
+panopticon --run-on-start
 ```
 Will run all commands currently upon watcher start, and then again on subsequent changes.
 
 - `--match` or `-m`
 ```sh
-pan --match "*echo*"
+panopticon --match "*echo*"
 ```
 Will run all commands matching the glob pattern `*echo*`
 
 - `--version` or `-v`
 ```sh
-pan --version
+panopticon --version
 ```
-Will print the version of `pan`
+Will print the version of `panopticon`
