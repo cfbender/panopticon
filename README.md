@@ -63,3 +63,9 @@ Will run all commands currently upon watcher start, and then again on subsequent
 pan --match "*echo*"
 ```
 Will run all commands matching the glob pattern `*echo*`
+
+- `--version` or `-v`
+```sh
+pan --version
+```
+Will print the version of `pan`

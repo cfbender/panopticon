@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"runtime/debug"
 
 	"pan/panopticon"
 
@@ -22,11 +23,12 @@ var (
 
 func main() {
 	var (
-		runOnStart bool
-		showHelp   bool
-		verbose    bool
-		match      string
-		opts       []tea.ProgramOption
+		runOnStart  bool
+		showHelp    bool
+		showVersion bool
+		verbose     bool
+		match       string
+		opts        []tea.ProgramOption
 	)
 
 	flag.BoolVar(&runOnStart, "run-on-start", false, "whether to run all commands on start")
@@ -34,12 +36,19 @@ func main() {
 	flag.BoolVar(&showHelp, "h", false, "show help")
 	flag.BoolVar(&showHelp, "help", false, "show help")
 	flag.BoolVar(&verbose, "verbose", false, "log output to pan.log")
+	flag.BoolVar(&showVersion, "v", false, "show version")
 	flag.StringVar(&match, "match", "*", "glob pattern to match commands")
 	flag.StringVar(&match, "m", "*", "glob pattern to match commands")
 	flag.Parse()
 
 	if showHelp {
 		flag.Usage()
+		os.Exit(0)
+	}
+
+	if showVersion {
+		info, _ := debug.ReadBuildInfo()
+		fmt.Println(info.Main.Version)
 		os.Exit(0)
 	}
 	argsWithoutProg := os.Args[1:]
