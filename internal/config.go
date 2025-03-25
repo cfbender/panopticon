@@ -2,14 +2,18 @@ package internal
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"time"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/gobwas/glob"
 	"gopkg.in/yaml.v3"
 )
 
@@ -36,6 +40,7 @@ type result struct {
 type model struct {
 	spinner         spinner.Model
 	results         map[int]result
+	triggerChans    []chan bool
 	quitting        bool
 	commands        []Command
 	progress        progress.Model
@@ -54,6 +59,82 @@ type Command struct {
 
 type Config struct {
 	Commands []Command `yaml:"commands"`
+}
+
+func NewModel(cancel context.CancelFunc, g glob.Glob) model {
+	config, err := loadConfig()
+	if err != nil {
+		fmt.Println("Error loading config:", err)
+		os.Exit(1)
+	}
+
+	var commands []Command
+	var i int
+	for _, cmd := range config.Commands {
+		if g.Match(cmd.Cmd) {
+			commands = append(commands, Command{i, cmd.Cmd, cmd.WatchPaths, cmd.IgnorePaths})
+			i++
+		}
+	}
+
+	sp := spinner.New()
+	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#ca9ee6"))
+	// Create a slice with one entry per command
+	results := make(map[int]result, len(commands))
+
+	// Initialize each result with its corresponding command
+	for _, cmd := range commands {
+		results[cmd.ID] = result{
+			job: cmd,
+		}
+	}
+	items := getDefaultItems(commands)
+	list := list.New(items, itemDelegate{}, 0, 0)
+	list.Title = "Commands"
+	list.Styles.Title = lipgloss.NewStyle().
+		Background(lipgloss.Color("#414559")).
+		Foreground(lipgloss.Color("#c6d0f5")).
+		Padding(0, 1)
+	list.SetShowStatusBar(false)
+	list.AdditionalShortHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			key.NewBinding(
+				key.WithKeys("ctrl+j", "ctrl+down"),
+				key.WithHelp("ctrl+j/ctrl+↓", "scroll down in viewport"),
+			),
+			key.NewBinding(
+				key.WithKeys("ctrl+k", "ctrl+up"),
+				key.WithHelp("ctrl+k/ctrl+↑", "scroll up in viewport"),
+			),
+			key.NewBinding(
+				key.WithKeys("r"),
+				key.WithHelp("r", "run command now"),
+			),
+		}
+	}
+	list.DisableQuitKeybindings()
+	list.SetFilteringEnabled(false)
+	list.SetShowFilter(false)
+
+	triggerChans := make([]chan bool, len(commands))
+	for i := range commands {
+		triggerChans[i] = make(chan bool, 1) // Buffered channel
+	}
+
+	newModel := model{
+		spinner:         sp,
+		results:         results,
+		commands:        commands,
+		progress:        progress.New(progress.WithGradient("#f4b8e4", "#8caaee")),
+		list:            list,
+		currentViewport: nil,
+		cancelAll:       cancel,
+		triggerChans:    triggerChans,
+	}
+
+	setSizes(newModel)
+
+	return newModel
 }
 
 func loadConfig() (Config, error) {

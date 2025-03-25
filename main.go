@@ -94,6 +94,7 @@ func main() {
 	}
 
 	go panopticon.WatchForChanges(model, p, ctx)
+	go panopticon.WatchForTriggers(model, p, ctx)
 
 	if _, err := p.Run(); err != nil {
 		fmt.Println("Error starting Bubble Tea program:", err)

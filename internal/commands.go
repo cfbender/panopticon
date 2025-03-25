@@ -54,11 +54,34 @@ func runProcess(command Command, p *tea.Program, ctx context.Context) {
 	}
 }
 
+func executeCommand(m model, id int) {
+	log.Println("Attempting to trigger command:", m.commands[id].Cmd)
+
+	select {
+	case m.triggerChans[id] <- true:
+		log.Println("Trigger sent successfully")
+	default:
+		log.Println("Channel already has a value")
+	}
+}
+
 func RunAll(m model, p *tea.Program, context context.Context) {
 	log.Println("Running all commands...")
 
 	for _, cmd := range m.commands {
 		go runProcess(cmd, p, context)
+	}
+}
+
+func WatchForTriggers(m model, p *tea.Program, ctx context.Context) {
+	for id := range m.commands {
+		go func(cmdId int) {
+			for {
+				log.Println("Waiting for trigger for command:", m.commands[cmdId].Cmd)
+				<-m.triggerChans[cmdId]
+				runProcess(m.commands[cmdId], p, ctx)
+			}
+		}(id)
 	}
 }
 

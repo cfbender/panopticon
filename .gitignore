@@ -6,6 +6,7 @@
 *.dylib
 bin/
 pan
+panopticon
 
 # Test binary, built with go test -c
 *.test

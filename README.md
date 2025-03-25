@@ -45,6 +45,13 @@ panopticon
 ```
 Changing the file `index.ts` would run only `echo "source"`, where changing `src/components/some-component.tsx` would run both `echo "source"` and `echo "components"`.
 
+### TUI commands
+
+- `h/j` or `up/down` to navigate between commands
+- `enter` to view the output
+- `ctrl+j/ctrl+k`/`ctrl+up/ctrl+down` to navigate output in viewport
+- `r` to run command immediately
+
 ### Options
 
 - `--help` or `-h`

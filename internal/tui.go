@@ -1,21 +1,18 @@
 package internal
 
 import (
-	"context"
 	"fmt"
 	"log"
 	"os"
 	"sort"
 	"time"
 
-	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/progress"
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/gobwas/glob"
 	"golang.org/x/term"
 )
 
@@ -35,72 +32,6 @@ const (
 	padding = 2
 	offset  = 20
 )
-
-func NewModel(cancel context.CancelFunc, g glob.Glob) model {
-	config, err := loadConfig()
-	if err != nil {
-		fmt.Println("Error loading config:", err)
-		os.Exit(1)
-	}
-
-	var commands []Command
-	var i int
-	for _, cmd := range config.Commands {
-		if g.Match(cmd.Cmd) {
-			commands = append(commands, Command{i, cmd.Cmd, cmd.WatchPaths, cmd.IgnorePaths})
-			i++
-		}
-	}
-
-	sp := spinner.New()
-	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#ca9ee6"))
-	// Create a slice with one entry per command
-	results := make(map[int]result, len(commands))
-
-	// Initialize each result with its corresponding command
-	for _, cmd := range commands {
-		results[cmd.ID] = result{
-			job: cmd,
-		}
-	}
-	items := getDefaultItems(commands)
-	list := list.New(items, itemDelegate{}, 0, 0)
-	list.Title = "Commands"
-	list.Styles.Title = lipgloss.NewStyle().
-		Background(lipgloss.Color("#414559")).
-		Foreground(lipgloss.Color("#c6d0f5")).
-		Padding(0, 1)
-	list.SetShowStatusBar(false)
-	list.AdditionalShortHelpKeys = func() []key.Binding {
-		return []key.Binding{
-			key.NewBinding(
-				key.WithKeys("ctrl+j", "ctrl+down"),
-				key.WithHelp("ctrl+j/ctrl+↓", "scroll down in viewport"),
-			),
-			key.NewBinding(
-				key.WithKeys("ctrl+k", "ctrl+up"),
-				key.WithHelp("ctrl+k/ctrl+↑", "scroll up in viewport"),
-			),
-		}
-	}
-	list.DisableQuitKeybindings()
-	list.SetFilteringEnabled(false)
-	list.SetShowFilter(false)
-
-	newModel := model{
-		spinner:         sp,
-		results:         results,
-		commands:        commands,
-		progress:        progress.New(progress.WithGradient("#f4b8e4", "#8caaee")),
-		list:            list,
-		currentViewport: nil,
-		cancelAll:       cancel,
-	}
-
-	setSizes(newModel)
-
-	return newModel
-}
 
 func (m model) Init() tea.Cmd {
 	log.Println("Starting work...")
@@ -155,6 +86,23 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyRunes:
 			if msg.String() == "q" {
 				command = tea.Sequence(m.closeWatchers, tea.Quit)
+			} else if msg.String() == "r" {
+				i, _ := m.list.SelectedItem().(item)
+				m.currentViewport = nil
+				command = func() tea.Msg {
+					m.list.SetItem(i.id, item{
+						title:           i.title,
+						body:            i.body,
+						emoji:           i.emoji,
+						id:              i.id,
+						viewport:        nil,
+						viewportVisible: false,
+						running:         true,
+					})
+					log.Println("Executing command:", i.title)
+					executeCommand(m, i.id)
+					return nil
+				}
 			}
 		}
 	case tea.WindowSizeMsg:
@@ -198,6 +146,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
+	m = setSizes(m)
 	s := "\n" +
 		m.spinner.View() + " Watching 👀...\n\n"
 
