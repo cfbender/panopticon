@@ -12,13 +12,7 @@ import (
 	panopticon "github.com/cfbender/panopticon/internal"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/gobwas/glob"
-)
-
-var (
-	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241")).Render
-	mainStyle = lipgloss.NewStyle().MarginLeft(1)
 )
 
 func main() {
@@ -28,6 +22,7 @@ func main() {
 		showVersion bool
 		verbose     bool
 		match       string
+		theme       string
 		opts        []tea.ProgramOption
 	)
 
@@ -43,6 +38,8 @@ func main() {
 
 	flag.StringVar(&match, "match", "*", "glob pattern to match commands")
 	flag.StringVar(&match, "m", "*", "glob pattern to match commands")
+
+	flag.StringVar(&theme, "theme", "", "theme preset to use")
 
 	flag.Parse()
 
@@ -70,7 +67,7 @@ func main() {
 	defer cancel()
 
 	g := glob.MustCompile(match)
-	model := panopticon.NewModel(cancel, g)
+	model := panopticon.NewModel(cancel, g, theme)
 
 	if !verbose {
 		log.SetOutput(io.Discard)

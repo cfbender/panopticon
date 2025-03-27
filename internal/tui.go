@@ -17,7 +17,6 @@ import (
 )
 
 var (
-	helpStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#f4b8e4")).Render
 	mainStyle = lipgloss.
 			NewStyle().
 			Margin(1, 2).
@@ -35,6 +34,7 @@ const (
 
 func (m model) Init() tea.Cmd {
 	log.Println("Starting work...")
+	setColors(lipgloss.Color(m.theme.Foreground))
 	return tea.Batch(
 		m.spinner.Tick,
 	)

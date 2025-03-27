@@ -13,8 +13,8 @@ import (
 
 var (
 	itemStyle         = lipgloss.NewStyle().PaddingLeft(4)
-	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2).Foreground(lipgloss.Color("#f2d5cf"))
-	viewportStyle     = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).BorderForeground(lipgloss.Color("#f2d5cf")).Padding(0, 2).Margin(0, 2)
+	selectedItemStyle = lipgloss.NewStyle().PaddingLeft(2)
+	viewportStyle     = lipgloss.NewStyle().Border(lipgloss.NormalBorder()).Padding(0, 2).Margin(0, 2)
 )
 
 type item struct {
@@ -24,6 +24,12 @@ type item struct {
 	viewportVisible bool
 	running         bool
 	emoji           string
+	color           lipgloss.Color
+}
+
+func setColors(color lipgloss.Color) {
+	selectedItemStyle = selectedItemStyle.Foreground(color)
+	viewportStyle = viewportStyle.BorderForeground(color)
 }
 
 func (i item) FilterValue() string { return i.title + i.body }

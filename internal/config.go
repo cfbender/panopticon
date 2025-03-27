@@ -48,6 +48,7 @@ type model struct {
 	currentViewport *viewport.Model
 	currentSelected int
 	cancelAll       context.CancelFunc
+	theme           Theme
 }
 
 type Command struct {
@@ -57,12 +58,22 @@ type Command struct {
 	IgnorePaths []string `yaml:"ignore_paths,omitempty"`
 }
 
-type Config struct {
-	Commands []Command `yaml:"commands"`
+type Theme struct {
+	Foreground string
+	Primary    string
+	Secondary  string
+	Tertiary   string
+	Neutral    string
 }
 
-func NewModel(cancel context.CancelFunc, g glob.Glob) model {
-	config, err := loadConfig()
+type Config struct {
+	Commands    []Command `yaml:"commands"`
+	ThemePreset string    `yaml:"theme_preset"`
+	ThemeConfig Theme     `yaml:"theme"`
+}
+
+func NewModel(cancel context.CancelFunc, g glob.Glob, themeOverride string) model {
+	config, err := loadConfig(themeOverride)
 	if err != nil {
 		fmt.Println("Error loading config:", err)
 		os.Exit(1)
@@ -78,7 +89,7 @@ func NewModel(cancel context.CancelFunc, g glob.Glob) model {
 	}
 
 	sp := spinner.New()
-	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("#ca9ee6"))
+	sp.Style = lipgloss.NewStyle().Foreground(lipgloss.Color(config.ThemeConfig.Tertiary))
 	// Create a slice with one entry per command
 	results := make(map[int]result, len(commands))
 
@@ -92,8 +103,8 @@ func NewModel(cancel context.CancelFunc, g glob.Glob) model {
 	list := list.New(items, itemDelegate{}, 0, 0)
 	list.Title = "Commands"
 	list.Styles.Title = lipgloss.NewStyle().
-		Background(lipgloss.Color("#414559")).
-		Foreground(lipgloss.Color("#c6d0f5")).
+		Background(lipgloss.Color(config.ThemeConfig.Neutral)).
+		Foreground(lipgloss.Color(config.ThemeConfig.Foreground)).
 		Padding(0, 1)
 	list.SetShowStatusBar(false)
 	list.AdditionalShortHelpKeys = func() []key.Binding {
@@ -125,11 +136,12 @@ func NewModel(cancel context.CancelFunc, g glob.Glob) model {
 		spinner:         sp,
 		results:         results,
 		commands:        commands,
-		progress:        progress.New(progress.WithGradient("#f4b8e4", "#8caaee")),
+		progress:        progress.New(progress.WithGradient(config.ThemeConfig.Primary, config.ThemeConfig.Secondary)),
 		list:            list,
 		currentViewport: nil,
 		cancelAll:       cancel,
 		triggerChans:    triggerChans,
+		theme:           config.ThemeConfig,
 	}
 
 	setSizes(newModel)
@@ -137,10 +149,10 @@ func NewModel(cancel context.CancelFunc, g glob.Glob) model {
 	return newModel
 }
 
-func loadConfig() (Config, error) {
+func loadConfig(themeOverride string) (Config, error) {
 	// Check if the config file exists
 	if _, err := os.Stat(configFile); os.IsNotExist(err) {
-		log.Println("Config file not found, please run pan init or create one.")
+		log.Println("Config file not found, please run panopticon init or create one.")
 		return Config{}, err
 	}
 
@@ -176,7 +188,37 @@ func loadConfig() (Config, error) {
 		})
 	}
 
-	return Config{commands}, err
+	if themeOverride != "" {
+		log.Println("Using theme override:", themeOverride)
+		conf.ThemePreset = themeOverride
+	}
+
+	if conf.ThemePreset == "" || conf.ThemePreset == "default" {
+		conf.ThemePreset = "catppuccin"
+		conf.ThemeConfig = catppuccin
+	} else {
+		switch conf.ThemePreset {
+		case "catppuccin":
+			conf.ThemeConfig = catppuccin
+		case "gruvbox":
+			conf.ThemeConfig = gruvbox
+		case "dracula":
+			conf.ThemeConfig = dracula
+		case "solarized":
+			conf.ThemeConfig = solarized
+		case "nord":
+			conf.ThemeConfig = nord
+		case "tokyonight":
+			conf.ThemeConfig = tokyonight
+		default:
+			if conf.ThemeConfig == (Theme{}) {
+				log.Println("Invalid theme config, using default theme")
+				conf.ThemeConfig = catppuccin
+			}
+		}
+	}
+
+	return Config{commands, conf.ThemePreset, conf.ThemeConfig}, err
 }
 
 func InitConfig() error {
@@ -191,6 +233,7 @@ commands:
   - cmd: "echo 'Hello, World!'"
     watch_paths:
       - ./
+theme: "default"
 `)
 
 	log.Println("Creating sample panopticon.yaml")
