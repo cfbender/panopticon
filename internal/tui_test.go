@@ -53,20 +53,20 @@ func TestView(t *testing.T) {
 }
 
 func TestNewModel(t *testing.T) {
-	err := os.WriteFile(configFile, []byte(sampleConfig), 0o644)
+	err := os.WriteFile(commandFile, []byte(sampleConfig), 0o644)
 	require.NoError(t, err)
 	defer func() {
-		_ = os.RemoveAll(configFile)
+		_ = os.RemoveAll(commandFile)
 	}()
 
 	// Test that the NewModel function returns a model
 	cancel := func() {}
-	m := NewModel(cancel, glob.MustCompile("*"))
+	m := NewModel(cancel, glob.MustCompile("*"), "")
 
 	require.NotNil(t, m)
 
 	// Test that the model filters for the pattern
-	m = NewModel(cancel, glob.MustCompile("*hello world*"))
+	m = NewModel(cancel, glob.MustCompile("*hello world*"), "")
 
 	require.Len(t, m.commands, 1)
 	require.Equal(t, "echo 'hello world'", m.commands[0].Cmd)

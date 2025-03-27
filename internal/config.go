@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
 	"time"
 
 	"github.com/charmbracelet/bubbles/key"
@@ -23,7 +24,8 @@ const (
 	Pending Status = iota
 	Succeeded
 	Failed
-	configFile = "./panopticon.yaml"
+	commandFile = "./panopticon.yaml"
+	configFile  = "config.yaml"
 )
 
 func (s Status) String() string {
@@ -59,21 +61,24 @@ type Command struct {
 }
 
 type Theme struct {
-	Foreground string
-	Primary    string
-	Secondary  string
-	Tertiary   string
-	Neutral    string
+	Foreground string `yaml:"foreground"`
+	Primary    string `yaml:"primary"`
+	Secondary  string `yaml:"secondary"`
+	Tertiary   string `yaml:"tertiary"`
+	Neutral    string `yaml:"neutral"`
 }
 
 type Config struct {
-	Commands    []Command `yaml:"commands"`
-	ThemePreset string    `yaml:"theme_preset"`
-	ThemeConfig Theme     `yaml:"theme"`
+	ThemePreset string `yaml:"theme_preset"`
+	ThemeConfig Theme  `yaml:"theme"`
+}
+
+type CommandConfig struct {
+	Commands []Command `yaml:"commands"`
 }
 
 func NewModel(cancel context.CancelFunc, g glob.Glob, themeOverride string) model {
-	config, err := loadConfig(themeOverride)
+	config, commandConfig, err := loadConfig(themeOverride)
 	if err != nil {
 		fmt.Println("Error loading config:", err)
 		os.Exit(1)
@@ -81,7 +86,7 @@ func NewModel(cancel context.CancelFunc, g glob.Glob, themeOverride string) mode
 
 	var commands []Command
 	var i int
-	for _, cmd := range config.Commands {
+	for _, cmd := range commandConfig.Commands {
 		if g.Match(cmd.Cmd) {
 			commands = append(commands, Command{i, cmd.Cmd, cmd.WatchPaths, cmd.IgnorePaths})
 			i++
@@ -149,23 +154,31 @@ func NewModel(cancel context.CancelFunc, g glob.Glob, themeOverride string) mode
 	return newModel
 }
 
-func loadConfig(themeOverride string) (Config, error) {
+func loadConfig(themeOverride string) (Config, CommandConfig, error) {
 	// Check if the config file exists
-	if _, err := os.Stat(configFile); os.IsNotExist(err) {
+	if _, err := os.Stat(commandFile); os.IsNotExist(err) {
 		log.Println("Config file not found, please run panopticon init or create one.")
-		return Config{}, err
+		return Config{}, CommandConfig{}, err
 	}
 
 	var conf Config
+	var commandConf CommandConfig
 
-	data, err := os.ReadFile(configFile)
+	commandData, err := os.ReadFile(commandFile)
 	if err != nil {
-		return conf, err
+		return conf, commandConf, err
 	}
 
-	err = yaml.Unmarshal(data, &conf)
+	err = yaml.Unmarshal(commandData, &commandConf)
+
+	configFile, _ := getConfigPath()
+	if err == nil {
+		configData, _ := os.ReadFile(configFile)
+
+		err = yaml.Unmarshal(configData, &conf)
+	}
 	var commands []Command
-	for i, cmd := range conf.Commands {
+	for i, cmd := range commandConf.Commands {
 		// Get absolute path for each watch path
 		var watchPaths []string
 		for _, watchPath := range cmd.WatchPaths {
@@ -189,11 +202,10 @@ func loadConfig(themeOverride string) (Config, error) {
 	}
 
 	if themeOverride != "" {
-		log.Println("Using theme override:", themeOverride)
 		conf.ThemePreset = themeOverride
 	}
 
-	if conf.ThemePreset == "" || conf.ThemePreset == "default" {
+	if (conf.ThemePreset == "" || conf.ThemePreset == "default") && conf.ThemeConfig == (Theme{}) {
 		conf.ThemePreset = "catppuccin"
 		conf.ThemeConfig = catppuccin
 	} else {
@@ -218,7 +230,7 @@ func loadConfig(themeOverride string) (Config, error) {
 		}
 	}
 
-	return Config{commands, conf.ThemePreset, conf.ThemeConfig}, err
+	return Config{conf.ThemePreset, conf.ThemeConfig}, CommandConfig{commands}, err
 }
 
 func InitConfig() error {
@@ -238,4 +250,24 @@ theme: "default"
 
 	log.Println("Creating sample panopticon.yaml")
 	return os.WriteFile("panopticon.yaml", content, 0o644)
+}
+
+func getConfigPath() (string, error) {
+	var configDir string
+	switch runtime.GOOS {
+	case "windows":
+		// use %APPDATA%/panopticon/config.yaml
+		configDir = "%APPDATA%"
+	default:
+		configDir = os.Getenv("XDG_CONFIG_HOME")
+		if configDir == "" {
+			configDir = os.Getenv("HOME") + "/.config"
+		}
+	}
+
+	if _, err := os.Stat(configDir + "/panopticon/" + configFile); err == nil {
+		return configDir + "/panopticon/" + configFile, nil
+	}
+
+	return "", fmt.Errorf("config file not found")
 }

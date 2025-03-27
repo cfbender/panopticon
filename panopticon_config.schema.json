@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "type": "object",
+  "properties": {
+    "theme_preset": {
+      "type": "string"
+    },
+    "theme": {
+      "type": "object",
+      "properties": {
+        "primary": {
+          "type": "string"
+        },
+        "secondary": {
+          "type": "string"
+        },
+        "tertiary": {
+          "type": "string"
+        },
+        "foreground": {
+          "type": "string"
+        },
+        "neutral": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}
